@@ -14,14 +14,21 @@ WIDTH = 800
 HEIGHT = 600
 NAME = "My OpenGL window"
 
+
 # position, color
-triangle = [
+vertices = [
     -0.5, -0.5, 0.0, 1.0, 0.0, 0.0,
     0.5, -0.5, 0.0, 0.0, 1.0, 0.0,
-    0.0, 0.5, 0.0, 0.0, 0.0, 1.0
+    0.5, 0.5, 0.0, 0.0, 0.0, 1.0,
+    -0.5, 0.5, 0.0, 1.0, 1.0, 1.0
 ]
+vertices = np.array(vertices, dtype=np.float32)
 
-triangle = np.array(triangle, dtype=np.float32)
+indices = [
+    0, 1, 2,
+    2, 3, 0
+]
+indices = np.array(indices, dtype=np.uint32)
 
 
 vertex_shader_code = \
@@ -54,10 +61,6 @@ void main()
 """
 
 
-num_skip = 0
-num_vertices = 3
-
-
 def initialize():
     vertex_shader = shaders.compileShader(vertex_shader_code, GL_VERTEX_SHADER)
     fragment_shader = shaders.compileShader(fragment_shader_code, GL_FRAGMENT_SHADER)
@@ -68,9 +71,11 @@ def initialize():
 
     vbo = glGenBuffers(1)
     glBindBuffer(GL_ARRAY_BUFFER, vbo)
+    glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
 
-    byte_per_float = 4
-    glBufferData(GL_ARRAY_BUFFER, triangle.nbytes, triangle, GL_STATIC_DRAW)
+    ebo = glGenBuffers(1)
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo)
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
 
     position = glGetAttribLocation(program, "position")
     dim = 3
@@ -80,7 +85,8 @@ def initialize():
     glEnableVertexAttribArray(position)
 
     color = glGetAttribLocation(program, "color")
-    offset = ctypes.c_void_p(3 * 4)
+    byte_size = np.dtype(np.float32).itemsize
+    offset = ctypes.c_void_p(3 * byte_size)
     glVertexAttribPointer(color, dim, GL_FLOAT, GL_FALSE, stride, offset)
     glEnableVertexAttribArray(color)
 
@@ -108,7 +114,10 @@ def main():
 def display():
     glClearColor(0.2, 0.3, 0.2, 1.0)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-    glDrawArrays(GL_TRIANGLES, num_skip, num_vertices)
+
+    #glDrawArrays(GL_TRIANGLES, num_skip, num_vertices)
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
+
     glutSwapBuffers()
 
 

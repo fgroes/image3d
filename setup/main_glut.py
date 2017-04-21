@@ -73,13 +73,16 @@ in vec3 position;
 //in vec3 color;
 in vec2 texture_coord;
 uniform mat4 transform;
+uniform mat4 view;
+uniform mat4 model;
+uniform mat4 projection;
 
 //out vec3 new_color;
 out vec2 new_texture_coord;
 
 void main()
 {
-    gl_Position = transform * vec4(position, 1.0f);
+    gl_Position = projection * view * model * transform * vec4(position, 1.0f);
     //new_color = color;
     new_texture_coord = texture_coord;
 }
@@ -158,6 +161,8 @@ def initialize():
 
 
 def main():
+    global  program
+
     glutInit(sys.argv)
 
     glutInitContextVersion(3, 3)
@@ -173,6 +178,18 @@ def main():
     glClearColor(0.2, 0.3, 0.2, 1.0)
     glEnable(GL_DEPTH_TEST)
     #glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+
+    model = pyrr.matrix44.create_from_translation(pyrr.Vector3([0.0, 0.0, 0.0]))
+    view = pyrr.matrix44.create_from_translation(pyrr.Vector3([0.0, 0.0, -3.0]))
+    projection = pyrr.matrix44.create_perspective_projection_matrix(45.0, WIDTH / HEIGHT, 0.1, 100.0)
+
+    model_loc = glGetUniformLocation(program, "model")
+    view_loc = glGetUniformLocation(program, "view")
+    proj_loc = glGetUniformLocation(program, "projection")
+
+    glUniformMatrix4fv(model_loc, 1, GL_FALSE, model)
+    glUniformMatrix4fv(view_loc, 1, GL_FALSE, view)
+    glUniformMatrix4fv(proj_loc, 1, GL_FALSE, projection)
 
     glutDisplayFunc(display)
     glutTimerFunc(10, timer, 10)

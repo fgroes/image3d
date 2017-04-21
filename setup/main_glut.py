@@ -9,6 +9,7 @@ import OpenGL.GL.shaders as shaders
 import numpy as np
 import ctypes
 import pyrr
+from PIL import Image
 
 
 WIDTH = 800
@@ -16,26 +17,47 @@ HEIGHT = 600
 NAME = "My OpenGL window"
 
 
-# position, color
 vertices = [
-    -0.5, -0.5, 0.5, 1.0, 0.0, 0.0,
-    0.5, -0.5, 0.5, 0.0, 1.0, 0.0,
-    0.5, 0.5, 0.5, 0.0, 0.0, 1.0,
-    -0.5, 0.5, 0.5, 1.0, 1.0, 1.0,
-    -0.5, -0.5, -0.5, 1.0, 0.0, 0.0,
-    0.5, -0.5, -0.5, 0.0, 1.0, 0.0,
-    0.5, 0.5, -0.5, 0.0, 0.0, 1.0,
-    -0.5, 0.5, -0.5, 1.0, 1.0, 1.0
+    -0.5, -0.5, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.5, -0.5, 0.5, 0.0, 0.0, 0.0, 1.0, 0.0,
+    0.5, 0.5, 0.5, 0.0, 0.0, 0.0, 1.0, 1.0,
+    -0.5, 0.5, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0,
+
+    -0.5, -0.5, -0.5, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.5, -0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0,
+    0.5, 0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 1.0,
+    -0.5, 0.5, -0.5, 0.0, 0.0, 0.0, 0.0, 1.0,
+
+    0.5, -0.5, -0.5, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.5, 0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0,
+    0.5, 0.5, 0.5, 0.0, 0.0, 0.0, 1.0, 1.0,
+    0.5, -0.5, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0,
+
+    -0.5, 0.5, -0.5, 0.0, 0.0, 0.0, 0.0, 0.0,
+    -0.5, -0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0,
+    -0.5, -0.5, 0.5, 0.0, 0.0, 0.0, 1.0, 1.0,
+    -0.5, 0.5, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0,
+
+    -0.5, -0.5, -0.5, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.5, -0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0,
+    0.5, -0.5, 0.5, 0.0, 0.0, 0.0, 1.0, 1.0,
+    -0.5, -0.5, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0,
+
+    0.5, 0.5, -0.5, 0.0, 0.0, 0.0, 0.0, 0.0,
+    -0.5, 0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0,
+    -0.5, 0.5, 0.5, 0.0, 0.0, 0.0, 1.0, 1.0,
+    0.5, 0.5, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0,
 ]
 vertices = np.array(vertices, dtype=np.float32)
+
 
 indices = [
     0, 1, 2, 2, 3, 0,
     4, 5, 6, 6, 7, 4,
-    4, 5, 1, 1, 0, 4,
-    6, 7, 3, 3, 2, 6,
-    5, 6, 2, 2, 1, 5,
-    7, 4, 0, 0, 3, 7
+    8, 9, 10, 10, 11, 8,
+    12, 13, 14, 14, 15, 12,
+    16, 17, 18, 18, 19, 16,
+    20, 21, 22, 22, 23, 20
 ]
 num_indices = len(indices)
 print(num_indices)
@@ -48,14 +70,18 @@ vertex_shader_code = \
 #version 330
 
 in vec3 position;
-in vec3 color;
+//in vec3 color;
+in vec2 texture_coord;
 uniform mat4 transform;
-out vec3 new_color;
+
+//out vec3 new_color;
+out vec2 new_texture_coord;
 
 void main()
 {
     gl_Position = transform * vec4(position, 1.0f);
-    new_color = color;
+    //new_color = color;
+    new_texture_coord = texture_coord;
 }
 """
 
@@ -64,12 +90,15 @@ fragment_shader_code = \
 """
 #version 330
 
-in vec3 new_color;
+//in vec3 new_color;
+in vec2 new_texture_coord;
+
 out vec4 out_color;
+uniform sampler2D sampler_texture;
 
 void main()
 {
-    out_color = vec4(new_color, 1.0f);
+    out_color = texture(sampler_texture, new_texture_coord); //* new_color[0];
 }
 """
 program = None
@@ -80,7 +109,7 @@ def initialize():
 
     dim_vertex = 3
     dim_color = 3
-    float_byte_size = np.dtype(np.float32).itemsize
+    dim_texture = 2
 
     vertex_shader = shaders.compileShader(vertex_shader_code, GL_VERTEX_SHADER)
     fragment_shader = shaders.compileShader(fragment_shader_code, GL_FRAGMENT_SHADER)
@@ -100,15 +129,30 @@ def initialize():
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
 
     position = glGetAttribLocation(program, "position")
-    stride = (dim_vertex + dim_color) * float_byte_size
+    stride = (dim_vertex + dim_color + dim_texture) * vertices.itemsize
     offset = ctypes.c_void_p(0)
     glVertexAttribPointer(position, dim_vertex, GL_FLOAT, GL_FALSE, stride, offset)
     glEnableVertexAttribArray(position)
 
-    color = glGetAttribLocation(program, "color")
-    offset = ctypes.c_void_p(dim_vertex * float_byte_size)
-    glVertexAttribPointer(color, dim_color, GL_FLOAT, GL_FALSE, stride, offset)
-    glEnableVertexAttribArray(color)
+    # color = glGetAttribLocation(program, "color")
+    # offset = ctypes.c_void_p(dim_vertex * vertices.itemsize)
+    # glVertexAttribPointer(color, dim_color, GL_FLOAT, GL_FALSE, stride, offset)
+    # glEnableVertexAttribArray(color)
+
+    offset = ctypes.c_void_p((dim_vertex + dim_color) * vertices.itemsize)
+    tex = glGetAttribLocation(program, "texture_coord")
+    glVertexAttribPointer(tex, dim_texture, GL_FLOAT, GL_FALSE, stride, offset)
+    glEnableVertexAttribArray(tex)
+
+    texture = glGenTextures(1)
+    glBindTexture(GL_TEXTURE_2D, texture)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+    image = Image.open("crate.jpg")
+    img_data = np.array(list(image.getdata()), np.uint8)
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width, image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, img_data)
 
     glUseProgram(program)
 
@@ -117,8 +161,8 @@ def main():
     glutInit(sys.argv)
 
     glutInitContextVersion(3, 3)
-    #glutInitContextFlags(GLUT_FORWARD_COMPATIBLE)
-    #glutInitContextProfile(GLUT_CORE_PROFILE)
+    glutInitContextFlags(GLUT_FORWARD_COMPATIBLE)
+    glutInitContextProfile(GLUT_CORE_PROFILE)
 
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)
     glutInitWindowSize(WIDTH, HEIGHT)
@@ -128,7 +172,7 @@ def main():
 
     glClearColor(0.2, 0.3, 0.2, 1.0)
     glEnable(GL_DEPTH_TEST)
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+    #glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
 
     glutDisplayFunc(display)
     glutTimerFunc(10, timer, 10)

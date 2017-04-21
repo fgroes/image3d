@@ -7,18 +7,20 @@ from OpenGL.GLU import *
 from OpenGL.GL import *
 import OpenGL.GL.shaders as shaders
 import numpy as np
+import ctypes
 
 
 WIDTH = 800
 HEIGHT = 600
 NAME = "My OpenGL window"
 
-
+# position, color
 triangle = [
-    -0.5, -0.5, 0.0,
-    0.5, -0.5, 0.0,
-    0.0, 0.5, 0.0
+    -0.5, -0.5, 0.0, 1.0, 0.0, 0.0,
+    0.5, -0.5, 0.0, 0.0, 1.0, 0.0,
+    0.0, 0.5, 0.0, 0.0, 0.0, 1.0
 ]
+
 triangle = np.array(triangle, dtype=np.float32)
 
 
@@ -26,11 +28,14 @@ vertex_shader_code = \
 """
 #version 330
 
-layout (location=0) in vec4 position;
+in vec3 position;
+in vec3 color;
+out vec3 new_color;
 
 void main()
 {
-    gl_Position = position;
+    gl_Position = vec4(position, 1.0f);
+    new_color = color;
 }
 """
 
@@ -39,11 +44,12 @@ fragment_shader_code = \
 """
 #version 330
 
-out vec4 output_color;
+in vec3 new_color;
+out vec4 out_color;
 
 void main()
 {
-    output_color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    out_color = vec4(new_color, 1.0f);
 }
 """
 
@@ -67,13 +73,17 @@ def initialize():
     glBufferData(GL_ARRAY_BUFFER, triangle.nbytes, triangle, GL_STATIC_DRAW)
 
     position = glGetAttribLocation(program, "position")
-
     dim = 3
-    bytes_betw_data = 0
-    offset = None
-    glVertexAttribPointer(position, dim, GL_FLOAT, GL_FALSE, bytes_betw_data, offset)
-
+    stride = 24
+    offset = ctypes.c_void_p(0)
+    glVertexAttribPointer(position, dim, GL_FLOAT, GL_FALSE, stride, offset)
     glEnableVertexAttribArray(position)
+
+    color = glGetAttribLocation(program, "color")
+    offset = ctypes.c_void_p(3 * 4)
+    glVertexAttribPointer(color, dim, GL_FLOAT, GL_FALSE, stride, offset)
+    glEnableVertexAttribArray(color)
+
     glUseProgram(program)
 
 

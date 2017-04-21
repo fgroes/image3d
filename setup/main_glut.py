@@ -8,6 +8,7 @@ from OpenGL.GL import *
 import OpenGL.GL.shaders as shaders
 import numpy as np
 import ctypes
+import pyrr
 
 
 WIDTH = 800
@@ -48,11 +49,12 @@ vertex_shader_code = \
 
 in vec3 position;
 in vec3 color;
+uniform mat4 transform;
 out vec3 new_color;
 
 void main()
 {
-    gl_Position = vec4(position, 1.0f);
+    gl_Position = transform * vec4(position, 1.0f);
     new_color = color;
 }
 """
@@ -70,9 +72,12 @@ void main()
     out_color = vec4(new_color, 1.0f);
 }
 """
+program = None
 
 
 def initialize():
+    global program
+
     dim_vertex = 3
     dim_color = 3
     float_byte_size = np.dtype(np.float32).itemsize
@@ -121,13 +126,32 @@ def main():
 
     initialize()
 
+    glClearColor(0.2, 0.3, 0.2, 1.0)
+    glEnable(GL_DEPTH_TEST)
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+
     glutDisplayFunc(display)
+    glutTimerFunc(10, timer, 10)
 
     glutMainLoop()
 
 
+def timer(value):
+    time = 1.0 * glutGet(GLUT_ELAPSED_TIME) / 10000
+
+    rot_x = pyrr.Matrix44.from_x_rotation(np.pi * time)
+    rot_y = pyrr.Matrix44.from_y_rotation(np.pi * time)
+    rot_z = pyrr.Matrix44.from_z_rotation(np.pi * time)
+
+    transform_loc = glGetUniformLocation(program, "transform")
+    glUniformMatrix4fv(transform_loc, 1, GL_FALSE, rot_x * rot_y * rot_z)
+    glutPostRedisplay()
+    glutTimerFunc(value, timer, value)
+
+
 def display():
-    glClearColor(0.2, 0.3, 0.2, 1.0)
+    global program
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     #glDrawArrays(GL_TRIANGLES, num_skip, num_vertices)

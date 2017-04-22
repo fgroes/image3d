@@ -22,14 +22,14 @@ class OpenGlProgram(object):
     def __init__(self, vertices, indices, shader_program):
         self.vertices = vertices
         self.indices = indices
-        self.shader_program = shader_program
+        self.program = shader_program
 
     def initialize(self):
         dim_vertex = 3
         dim_color = 3
         dim_texture = 2
 
-        self.shader_program.compile()
+        self.program.compile()
 
         vao = glGenVertexArrays(1)
         glBindVertexArray(vao)
@@ -42,8 +42,7 @@ class OpenGlProgram(object):
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.indices.nbytes, self.indices, GL_STATIC_DRAW)
 
-        #position = glGetAttribLocation(self.shader_program.program, "position")
-        position = self.shader_program.get_location("position")
+        position = self.program.get_location("position")
         stride = (dim_vertex + dim_color + dim_texture) * self.vertices.itemsize
         offset = ctypes.c_void_p(0)
         glVertexAttribPointer(position, dim_vertex, GL_FLOAT, GL_FALSE, stride, offset)
@@ -55,7 +54,7 @@ class OpenGlProgram(object):
         # glEnableVertexAttribArray(color)
 
         offset = ctypes.c_void_p((dim_vertex + dim_color) * self.vertices.itemsize)
-        tex = self.shader_program.get_location("texture_coord")
+        tex = self.program.get_location("texture_coord")
         glVertexAttribPointer(tex, dim_texture, GL_FLOAT, GL_FALSE, stride, offset)
         glEnableVertexAttribArray(tex)
 
@@ -69,7 +68,7 @@ class OpenGlProgram(object):
         img_data = np.array(list(image.getdata()), np.uint8)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width, image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, img_data)
 
-        self.shader_program.use()
+        self.program.use()
 
 
     def main(self):
@@ -94,9 +93,9 @@ class OpenGlProgram(object):
         view = pyrr.matrix44.create_from_translation(pyrr.Vector3([0.0, 0.0, -3.0]))
         projection = pyrr.matrix44.create_perspective_projection_matrix(45.0, self.WIDTH / self.HEIGHT, 0.1, 100.0)
 
-        model_loc = self.shader_program.get_location("model", LocationType.UNIFORM)
-        view_loc = self.shader_program.get_location("view", LocationType.UNIFORM)
-        proj_loc = self.shader_program.get_location("projection", LocationType.UNIFORM)
+        model_loc = self.program.get_location("model", LocationType.UNIFORM)
+        view_loc = self.program.get_location("view", LocationType.UNIFORM)
+        proj_loc = self.program.get_location("projection", LocationType.UNIFORM)
 
         glUniformMatrix4fv(model_loc, 1, GL_FALSE, model)
         glUniformMatrix4fv(view_loc, 1, GL_FALSE, view)
@@ -115,7 +114,7 @@ class OpenGlProgram(object):
         rot_y = pyrr.Matrix44.from_y_rotation(np.pi * time)
         rot_z = pyrr.Matrix44.from_z_rotation(np.pi * time)
 
-        transform_loc = glGetUniformLocation(self.shader_program.program, "transform")
+        transform_loc = self.program.get_location("transform", LocationType.UNIFORM)
         glUniformMatrix4fv(transform_loc, 1, GL_FALSE, rot_x * rot_y * rot_z)
         glutPostRedisplay()
         glutTimerFunc(value, self.timer, value)

@@ -58,55 +58,9 @@ class OpenGlProgram(object):
     HEIGHT = 600
     NAME = "My OpenGL window"
 
-    def __init__(self):
-
-
-        self.vertices = [
-            -0.5, -0.5, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0,
-            0.5, -0.5, 0.5, 0.0, 0.0, 0.0, 1.0, 0.0,
-            0.5, 0.5, 0.5, 0.0, 0.0, 0.0, 1.0, 1.0,
-            -0.5, 0.5, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0,
-
-            -0.5, -0.5, -0.5, 0.0, 0.0, 0.0, 0.0, 0.0,
-            0.5, -0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0,
-            0.5, 0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 1.0,
-            -0.5, 0.5, -0.5, 0.0, 0.0, 0.0, 0.0, 1.0,
-
-            0.5, -0.5, -0.5, 0.0, 0.0, 0.0, 0.0, 0.0,
-            0.5, 0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0,
-            0.5, 0.5, 0.5, 0.0, 0.0, 0.0, 1.0, 1.0,
-            0.5, -0.5, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0,
-
-            -0.5, 0.5, -0.5, 0.0, 0.0, 0.0, 0.0, 0.0,
-            -0.5, -0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0,
-            -0.5, -0.5, 0.5, 0.0, 0.0, 0.0, 1.0, 1.0,
-            -0.5, 0.5, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0,
-
-            -0.5, -0.5, -0.5, 0.0, 0.0, 0.0, 0.0, 0.0,
-            0.5, -0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0,
-            0.5, -0.5, 0.5, 0.0, 0.0, 0.0, 1.0, 1.0,
-            -0.5, -0.5, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0,
-
-            0.5, 0.5, -0.5, 0.0, 0.0, 0.0, 0.0, 0.0,
-            -0.5, 0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0,
-            -0.5, 0.5, 0.5, 0.0, 0.0, 0.0, 1.0, 1.0,
-            0.5, 0.5, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0,
-        ]
-        self.vertices = np.array(self.vertices, dtype=np.float32)
-
-
-        self.indices = [
-            0, 1, 2, 2, 3, 0,
-            4, 5, 6, 6, 7, 4,
-            8, 9, 10, 10, 11, 8,
-            12, 13, 14, 14, 15, 12,
-            16, 17, 18, 18, 19, 16,
-            20, 21, 22, 22, 23, 20
-        ]
-        self.num_indices = len(self.indices)
-        print(self.num_indices)
-        self.indices = np.array(self.indices, dtype=np.uint32)
-
+    def __init__(self, vertices, indices):
+        self.vertices = vertices
+        self.indices = indices
         self.program = None
 
 
@@ -124,12 +78,10 @@ class OpenGlProgram(object):
 
         vbo = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, vbo)
-        print(self.vertices.nbytes)
         glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
 
         ebo = glGenBuffers(1)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo)
-        print(self.indices.nbytes)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.indices.nbytes, self.indices, GL_STATIC_DRAW)
 
         position = glGetAttribLocation(self.program, "position")
@@ -211,15 +163,12 @@ class OpenGlProgram(object):
 
 
     def display(self):
-        global program
-
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
-        glDrawElements(GL_TRIANGLES, self.num_indices, GL_UNSIGNED_INT, None)
-
+        glDrawElements(GL_TRIANGLES, len(self.indices), GL_UNSIGNED_INT, None)
         glutSwapBuffers()
 
 
 if __name__ == "__main__":
-    program = OpenGlProgram()
+    from crate_data import vertices, indices
+    program = OpenGlProgram(vertices, indices)
     program.main()

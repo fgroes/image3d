@@ -1,12 +1,13 @@
 #version 330
 
-//in vec3 new_color;
-in vec2 new_texture_coord;
+in vec3 new_color;
+//in vec2 new_texture_coord;
 
 out vec4 out_color;
 uniform sampler2D sampler_texture;
 
 void main()
 {
-    out_color = texture(sampler_texture, new_texture_coord); //* new_color[0];
+    //out_color = texture(sampler_texture, new_texture_coord); //* new_color[0];
+    out_color = vec4(new_color, 1.0f);
 }

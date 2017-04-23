@@ -1,4 +1,4 @@
-from OpenGL.GL import *
+import OpenGL.GL as gl
 import OpenGL.GL.shaders as shaders
 
 
@@ -24,15 +24,15 @@ class ShaderProgram(object):
     def compile(self):
         vertex_shader_code = self.load(self.vertex_shader_file)
         fragment_shader_code = self.load(self.fragment_shader_file)
-        vertex_shader = shaders.compileShader(vertex_shader_code, GL_VERTEX_SHADER)
-        fragment_shader = shaders.compileShader(fragment_shader_code, GL_FRAGMENT_SHADER)
+        vertex_shader = shaders.compileShader(vertex_shader_code, gl.GL_VERTEX_SHADER)
+        fragment_shader = shaders.compileShader(fragment_shader_code, gl.GL_FRAGMENT_SHADER)
         self.program = shaders.compileProgram(vertex_shader, fragment_shader)
 
     def get_location(self, name, type=LocationType.ATTRIB):
         if type == LocationType.ATTRIB:
-            return glGetAttribLocation(self.program, name)
+            return gl.glGetAttribLocation(self.program, name)
         elif type == LocationType.UNIFORM:
-            return glGetUniformLocation(self.program, name)
+            return gl.glGetUniformLocation(self.program, name)
 
     def use(self):
-        glUseProgram(self.program)
+        gl.glUseProgram(self.program)

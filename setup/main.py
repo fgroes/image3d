@@ -11,6 +11,8 @@ import ctypes
 import pyrr
 from PIL import Image
 from shader import *
+from model import *
+from renderer import *
 
 
 class OpenGlProgram(object):
@@ -31,42 +33,56 @@ class OpenGlProgram(object):
 
         self.program.compile()
 
-        vao = glGenVertexArrays(1)
-        glBindVertexArray(vao)
 
-        vbo = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER, vbo)
-        glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
-
-        ebo = glGenBuffers(1)
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo)
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.indices.nbytes, self.indices, GL_STATIC_DRAW)
-
-        position = self.program.get_location("position")
-        stride = (dim_vertex + dim_color + dim_texture) * self.vertices.itemsize
-        offset = ctypes.c_void_p(0)
-        glVertexAttribPointer(position, dim_vertex, GL_FLOAT, GL_FALSE, stride, offset)
-        glEnableVertexAttribArray(position)
-
-        # color = glGetAttribLocation(program, "color")
-        # offset = ctypes.c_void_p(dim_vertex * self.vertices.itemsize)
-        # glVertexAttribPointer(color, dim_color, GL_FLOAT, GL_FALSE, stride, offset)
-        # glEnableVertexAttribArray(color)
-
-        offset = ctypes.c_void_p((dim_vertex + dim_color) * self.vertices.itemsize)
-        tex = self.program.get_location("texture_coord")
-        glVertexAttribPointer(tex, dim_texture, GL_FLOAT, GL_FALSE, stride, offset)
-        glEnableVertexAttribArray(tex)
-
-        texture = glGenTextures(1)
-        glBindTexture(GL_TEXTURE_2D, texture)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        self.position_loc = self.program.get_location("position")
+        self.color_loc = self.program.get_location("color")
+        #self.texture_loc = self.program.get_location("texture_coord")
+        #loader = ModelLoader(self.position_loc, self.color_loc, self.texture_loc)
+        loader = ModelLoader(self.position_loc, self.color_loc, None) #self.texture_loc)
         image = Image.open("crate.jpg")
         img_data = np.array(list(image.getdata()), np.uint8)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width, image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, img_data)
+        texture = Texture(image.width, image.height, img_data)
+        self.model = loader.load_to_vao(self.vertices, self.indices) #, texture=texture)
+        #self.model = loader.load_to_vao(self.vertices, self.indices, texture=texture)
+        self.renderer = Renderer(self.position_loc)
+
+
+        # vao = glGenVertexArrays(1)
+        # glBindVertexArray(vao)
+        #
+        # vbo = glGenBuffers(1)
+        # glBindBuffer(GL_ARRAY_BUFFER, vbo)
+        # glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
+        #
+        # ebo = glGenBuffers(1)
+        # glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo)
+        # glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.indices.nbytes, self.indices, GL_STATIC_DRAW)
+        #
+        # position = self.program.get_location("position")
+        # stride = (dim_vertex + dim_color + dim_texture) * self.vertices.itemsize
+        # offset = ctypes.c_void_p(0)
+        # glVertexAttribPointer(position, dim_vertex, GL_FLOAT, GL_FALSE, stride, offset)
+        # glEnableVertexAttribArray(position)
+        #
+        # # color = glGetAttribLocation(program, "color")
+        # # offset = ctypes.c_void_p(dim_vertex * self.vertices.itemsize)
+        # # glVertexAttribPointer(color, dim_color, GL_FLOAT, GL_FALSE, stride, offset)
+        # # glEnableVertexAttribArray(color)
+        #
+        # offset = ctypes.c_void_p((dim_vertex + dim_color) * self.vertices.itemsize)
+        # tex = self.program.get_location("texture_coord")
+        # glVertexAttribPointer(tex, dim_texture, GL_FLOAT, GL_FALSE, stride, offset)
+        # glEnableVertexAttribArray(tex)
+
+        # texture = glGenTextures(1)
+        # glBindTexture(GL_TEXTURE_2D, texture)
+        # glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        # glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        # glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        # glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        # image = Image.open("crate.jpg")
+        # img_data = np.array(list(image.getdata()), np.uint8)
+        # glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width, image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, img_data)
 
         self.program.use()
 
@@ -84,10 +100,6 @@ class OpenGlProgram(object):
         glutCreateWindow(self.NAME)
 
         self.initialize()
-
-        glClearColor(0.2, 0.3, 0.2, 1.0)
-        glEnable(GL_DEPTH_TEST)
-        #glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
 
         model = pyrr.matrix44.create_from_translation(pyrr.Vector3([0.0, 0.0, 0.0]))
         view = pyrr.matrix44.create_from_translation(pyrr.Vector3([0.0, 0.0, -3.0]))
@@ -121,9 +133,12 @@ class OpenGlProgram(object):
 
 
     def display(self):
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        glDrawElements(GL_TRIANGLES, len(self.indices), GL_UNSIGNED_INT, None)
+        self.renderer.prepare()
+        self.renderer.render(self.model)
         glutSwapBuffers()
+
+    def clean_up(self):
+        self.renderer.clean_up()
 
 
 if __name__ == "__main__":
@@ -133,3 +148,4 @@ if __name__ == "__main__":
     shader_program = ShaderProgram(vertex_shader_filename, fragment_shader_filename)
     program = OpenGlProgram(vertices, indices, shader_program)
     program.main()
+    #program.clean_up()

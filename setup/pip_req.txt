@@ -1,0 +1,12 @@
+appdirs==1.4.3
+glfw==1.4.0
+multipledispatch==0.4.9
+numpy==1.12.1
+olefile==0.44
+packaging==16.8
+Pillow==4.1.0
+PyOpenGL==3.1.0
+pyparsing==2.2.0
+pyrr==0.8.3
+PySDL2==0.9.5
+six==1.10.0

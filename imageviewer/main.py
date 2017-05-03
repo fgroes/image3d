@@ -91,7 +91,7 @@ class OpenGlProgram(object):
         time = 1.0 * glutGet(GLUT_ELAPSED_TIME) / 10000
 
         ax = 0.0
-        ay = 0.0
+        ay = np.pi / 6
         az = 0.0
 
         rot_x = pyrr.Matrix44.from_x_rotation(ax)

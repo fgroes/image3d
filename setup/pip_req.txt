@@ -9,4 +9,5 @@ PyOpenGL==3.1.0
 pyparsing==2.2.0
 pyrr==0.8.3
 PySDL2==0.9.5
+scipy==0.19.0
 six==1.10.0

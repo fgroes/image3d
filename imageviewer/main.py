@@ -11,8 +11,8 @@ from shader import *
 
 class OpenGlProgram(object):
 
-    WIDTH = 800
-    HEIGHT = 600
+    WIDTH = 1600
+    HEIGHT = 1200
     NAME = "My OpenGL window"
 
     def __init__(self, vertices, indices, shader_program):
@@ -90,17 +90,19 @@ class OpenGlProgram(object):
     def timer(self, value):
         time = 1.0 * glutGet(GLUT_ELAPSED_TIME) / 10000
 
-        ax = 0.0
-        ay = np.pi / 6
-        az = 0.0
+        # ax = 0.0
+        # # ay = np.pi / 6
+        # ay = 0.0
+        # az = 0.0
 
-        rot_x = pyrr.Matrix44.from_x_rotation(ax)
-        rot_y = pyrr.Matrix44.from_y_rotation(ax)
-        rot_z = pyrr.Matrix44.from_z_rotation(az)
+        # rot_x = pyrr.Matrix44.from_x_rotation(ax)
+        # rot_y = pyrr.Matrix44.from_y_rotation(ax)
+        # rot_z = pyrr.Matrix44.from_z_rotation(az)
 
-        #rot_x = pyrr.Matrix44.from_x_rotation(np.pi * time)
-        #rot_y = pyrr.Matrix44.from_y_rotation(np.pi * time)
-        #rot_z = pyrr.Matrix44.from_z_rotation(np.pi * time)
+        rot_x = pyrr.Matrix44.from_x_rotation(2 * np.pi / 6)
+        #rot_y = pyrr.Matrix44.from_y_rotation(0.0)
+        rot_y = pyrr.Matrix44.from_y_rotation(np.pi * time)
+        rot_z = pyrr.Matrix44.from_z_rotation(0.0)
 
         transform_loc = self.program.get_location("transform", LocationType.UNIFORM)
         glUniformMatrix4fv(transform_loc, 1, GL_FALSE, rot_x * rot_y * rot_z)
